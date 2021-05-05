@@ -12,21 +12,21 @@ RM	= rm -f
 NAME	= ftrace
 
 SRCS	=	./src/main.c 		\
-		./src/p_flag_loop.c	\
-		./src/my_strace.c	\
-		./src/print.c		\
-		./src/print_funcs.c	\
-		./src/print_funcs2.c
+		    ./src/my_strace.c	\
+		    ./src/print.c		\
+		    ./src/print_funcs.c	\
+		    ./src/print_funcs2.c	\
+		    ./src/get_sym.c
 
 
 OBJS	= $(SRCS:.c=.o)
 
-CFLAGS += -W -Wall -Wextra
+CFLAGS += -W -Wall -Wextra 
 
 all		: $(NAME)
 
 $(NAME)		: $(OBJS)
-		$(CC) $(OBJS) -o $(NAME) $(FLAGS)
+		$(CC) $(OBJS) -o $(NAME) $(FLAGS) -l elf
 
 
 clean:

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -26,9 +27,10 @@
 #include <syscall.h>
 #include <unistd.h>
 #include <string.h>
+#include <gelf.h>
 
-#define SC_NUMBER  (8 * ORIG_RAX)
-#define SC_RETCODE (8 * RAX)
+#include "../include/symtrack.h"
+
 #define USR struct user_regs_struct
 
 typedef struct tools_s {
@@ -42,6 +44,11 @@ typedef struct print_s {
     void (*func)(unsigned long long int reg, tools_t pr_tools);
 }print_t;
 
+typedef struct prog {
+    char *path;
+    int pid;
+}prog_t;
+
 void p_retcode(USR *regs, int s_f, tools_t pr_tools);
 void p_args(USR *regs, tools_t pr_tools);
 void p_str(unsigned long long reg, tools_t pr_tools);
@@ -52,7 +59,6 @@ void p_long(unsigned long long reg, tools_t pr_tools);
 void p_uint(unsigned long long reg, tools_t pr_tools);
 void p_ulong(unsigned long long reg, tools_t pr_tools);
 void p_pointer(unsigned long long reg, tools_t pr_tools);
-int p_flag_loop(int pid);
-int my_ftrace(int ac, char **av, char **envp, int s_f);
-void if_call(int pid, USR *regs, int is_s, char *file_name);
-int do_trace(int pid, int s_f, char **av);
+int my_ftrace(char **av, sym_tab_t *sym, char **envp);
+void opcode_eval(prog_t prog, USR *regs, sym_tab_t *sym);
+int do_trace(prog_t prog, sym_tab_t *sym);

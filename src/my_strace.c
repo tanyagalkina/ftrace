@@ -5,6 +5,7 @@
 ** src
 */
 
+#include <assert.h>
 #include "../include/strace.h"
 #include "../include/syscall.h"
 #include "../include/signal.h"
@@ -20,62 +21,143 @@ void print_sig(siginfo_t info)
 
 static void tail(USR u_in, int pid, int status, int s_f)
 {
-    siginfo_t sig;
+   siginfo_t sig;
     ptrace(PTRACE_GETREGS, pid, NULL, &u_in);
+    if (u_in.rax == 231)
+        printf ("Leaving function main\n");
     if (s_f)
-        printf("Syscall %s(0) = ?\n", table[u_in.rax].name);
+        printf("Syscall %s(%d) = ?\n", table[u_in.rax].name, WEXITSTATUS(status));
     else
-        printf("Syscall exit_group(0x0) = ?\n");
+        printf("Syscall exit_group(0x%llx) = ?\n", WEXITSTATUS(status));
 
     printf("+++ exited with %d +++\n", WEXITSTATUS(status));
 }
 
-int do_trace(int pid, int s_f, char **av)
+unsigned long get_by_name(sym_tab_t *lsm, char *name)
+{
+    sym_tab_t *tmp = lsm;
+
+    while (tmp != NULL) {
+        if (strcmp(tmp->name, name) == 0)
+            return (tmp->address);
+        tmp = tmp->next;
+    }
+    return (0);
+}
+
+void *add_to_stack_mark(flag_t *flag, sym_tab_t *entry)
+{
+    if (flag->mark == NULL) {
+        printf("The stack flag->mark was null\n");
+        flag->mark = malloc(sizeof(stack_mark_t));
+        flag->mark->name = strdup(entry->name);
+        flag->mark->func_addr = strdup(entry->address);
+        flag->mark->func_size = entry->size;
+        flag->mark->prev = NULL;
+        flag->mark->next = NULL;
+        flag->mark->last = flag->mark;
+        //return flag->mark;
+
+        printf("this was our first static func except main\n");
+
+        assert (flag->mark != NULL);
+
+    }
+    else {
+        flag->mark->last->next = malloc(sizeof(stack_mark_t));
+        flag->mark->last->next->name = entry->name;
+        flag->mark->last->next->prev = flag->mark->last;
+        flag->mark->last = flag->mark->last->next;
+        flag->mark->last->next = NULL;
+        flag->mark->last->func_size = entry->size;
+        flag->mark->last->func_addr = entry->address;
+    }
+}
+
+void find_by_addr(unsigned long addr, sym_tab_t *sym, flag_t *flag)
+{
+    sym_tab_t *tmp = sym;
+
+    while (tmp != NULL) {
+        if (addr == tmp->address && tmp->name[0] != '_') {
+            printf("Entering function %s at %#lx\n",
+                   tmp->name, tmp->address);
+            add_to_stack_mark(flag, tmp);
+            assert(flag->mark != NULL);
+            break;
+        }
+        tmp = tmp->next;
+    }
+}
+
+void ret_instr(USR *regs, flag_t *flag)
+{
+    if (regs->rip - (flag->mark->last->func_size - 1)
+        == flag->mark->last->func_addr) {
+        printf("Leaving function %s\n", flag->mark->last->name);
+        flag->mark->last = flag->mark->last->prev;
+        if (flag->mark->last)
+            free(flag->mark->last->next);
+    }
+}
+
+void opcode_eval(prog_t prog, USR *regs, sym_tab_t *sym)
+{
+    static flag_t flag;
+    tools_t pr_tools;
+    pr_tools.pid = prog.pid;
+    pr_tools.s_f = 0;
+    long val = (ptrace(PTRACE_PEEKTEXT, prog.pid, regs->rip, NULL));
+    unsigned char		f = (unsigned)0xFF & val;
+    unsigned char		s = ((unsigned)0xFF00 & val) >> 8;
+    if (f == 0xe8) {
+        long offset = ptrace(PTRACE_PEEKTEXT, prog.pid, regs->rip + 1, 0);
+        unsigned long addr = regs->rip + (long)(int)(offset &
+                                         (unsigned long)0xFFFFFFFF) + 5;
+        find_by_addr(addr, sym, &flag);
+    }
+    else if ((int)regs->orig_rax < 300 && (int)regs->orig_rax > -1) {
+        printf("Syscall %s", table[regs->orig_rax].name);
+        pr_tools.call_nb = (unsigned int) regs->orig_rax;
+        if (regs->orig_rax == 59) {
+            printf("(\"Syscall %s\")", prog.path);
+        } else
+            p_args(regs, pr_tools);
+        p_retcode(regs, 0, pr_tools);
+    }
+    if (f == 0xc3 && flag.mark)
+        ret_instr(regs, &flag);
+}
+
+int do_trace(prog_t prog, sym_tab_t *sym)
 {
     int status;
     USR u_in;
     struct rusage r_us;
     siginfo_t sig;
-    wait4(pid, &status, 0, &r_us);
+    wait4(prog.pid, &status, 0, &r_us);
+    printf ("Entering function main at %#lx\n", get_by_name(sym, "main"));
     while (WIFSTOPPED(status) && (WSTOPSIG(status) == SIGTRAP \
     || WSTOPSIG(status) == SIGSTOP)) {
-        ptrace(PTRACE_SINGLESTEP, pid, NULL, NULL);
-        wait4(pid, &status, 0, &r_us);
-        ptrace(PTRACE_GETREGS, pid, NULL, &u_in);
-        if_call(pid, &u_in, s_f, av[0]);
-        ptrace(PTRACE_GETSIGINFO, pid, NULL, &sig);
+        ptrace(PTRACE_SINGLESTEP, prog.pid, NULL, NULL);
+        wait4(prog.pid, &status, 0, &r_us);
+        ptrace(PTRACE_GETREGS, prog.pid, NULL, &u_in);
+        ptrace(PTRACE_GETSIGINFO, prog.pid, NULL, &sig);
         if (sig.si_signo != 0X05)
             print_sig(sig);
+        opcode_eval(prog, &u_in, sym);
         if (WIFEXITED(status))
             break;
     }
-    tail(u_in, pid, status, s_f);
+    tail(u_in, prog.pid, status, 0);
     return (0);
 }
 
-void if_call(int pid, USR *regs, int s_f, char *path)
-{
-    (void)path;
-    tools_t pr_tools;
-    pr_tools.pid = pid;
-    pr_tools.s_f = s_f;
-    if ((int)regs->orig_rax < 300 && (int)regs->orig_rax > -1) {
-    //if ((int)regs->orig_rax != -1) {
-        printf("Syscall %s", table[regs->orig_rax].name);
-        pr_tools.call_nb = (unsigned int)regs->orig_rax;
-        if (regs->orig_rax == 59) {
-            printf("(\"Syscall %s\")", path);
-        } else
-            p_args(regs, pr_tools);
-        p_retcode(regs, s_f, pr_tools);
-    }
-}
-
-int my_ftrace(int ac, char **av, char **envp, int s_f)
+int my_ftrace(char **av, sym_tab_t *sym, char **envp)
 {
     pid_t pid;
     int ret;
-
+    prog_t prog;
     pid = fork();
     if (pid == -1) {
         exit (84);
@@ -88,7 +170,9 @@ int my_ftrace(int ac, char **av, char **envp, int s_f)
             exit (84);
         }
     } else {
-        return do_trace(pid, s_f, av);
+        prog.pid = pid;
+        prog.path = av[0];
+        return do_trace(prog, sym);
     }
     return (0);
 }
