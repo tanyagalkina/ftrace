@@ -17,11 +17,6 @@ static char **get_args(int ac, int *s_f, char **av)
     return ((char **)&av[1 + *s_f]);
 }
 
-static void print_help(void)
-{
-    printf("USAGE: ftrace <command>\n");
-}
-
 static int is_pos_int(char *av2)
 {
     int pid = atoi(av2);
@@ -60,11 +55,11 @@ int main(int ac, char *av[], char **envp)
     char **args;
     sym_tab_t *sym;
     if (ac < 2) {
-        print_help();
+        printf("USAGE: ftrace <command>\n");
         return (84);
     }
     if (ac == 2 && (!strcmp(av[1], "--h") || !strcmp(av[1], "-h"))) {
-        print_help();
+        printf("USAGE: ftrace <command>\n");
         return (0);
     }
     args = (char **)&av[1];

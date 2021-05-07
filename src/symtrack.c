@@ -22,7 +22,6 @@ unsigned long get_by_name(sym_tab_t *lsm, char *name)
 void add_to_stack_mark(flag_t *flag, sym_tab_t *entry)
 {
     if (flag->mark == NULL) {
-        printf("The stack flag->mark was null\n");
         flag->mark = malloc(sizeof(stack_mark_t));
         flag->mark->name = strdup(entry->name);
         flag->mark->func_addr = strdup(entry->address);

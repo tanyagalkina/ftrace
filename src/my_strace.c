@@ -8,16 +8,6 @@
 #include <assert.h>
 #include "../include/strace.h"
 #include "../include/syscall.h"
-#include "../include/signal.h"
-
-void print_sig(siginfo_t info)
-{
-    char *sig;
-    if (sig_tab[info.si_signo].macro && info.si_signo != 0) {
-        sig = strdup(sig_tab[info.si_signo].macro);
-        printf("Received signal %s\n", sig);
-    }
-}
 
 static void tail(USR u_in, int pid, int status, int s_f)
 {
@@ -39,6 +29,7 @@ void print_syscall(USR *regs, tools_t pr_tools, prog_t prog )
     p_retcode(regs, 0, pr_tools);
 
 }
+
 void opcode_eval(prog_t prog, USR *regs, sym_tab_t *sym)
 {
     static flag_t flag;
@@ -46,12 +37,12 @@ void opcode_eval(prog_t prog, USR *regs, sym_tab_t *sym)
     pr_tools.pid = prog.pid;
     pr_tools.s_f = 0;
     long val = (ptrace(PTRACE_PEEKTEXT, prog.pid, regs->rip, NULL));
-    unsigned char		f = (unsigned)0xFF & val;
-    unsigned char		s = ((unsigned)0xFF00 & val) >> 8;
+    unsigned char f = (unsigned)0xFF & val;
+
     if (f == 0xe8) {
         long offset = ptrace(PTRACE_PEEKTEXT, prog.pid, regs->rip + 1, 0);
-        unsigned long addr = regs->rip + (long)(int)(offset &
-                                         (unsigned long)0xFFFFFFFF) + 5;
+        unsigned long addr = regs->rip + (long)(int)(offset & \
+(unsigned long)0xFFFFFFFF) + 5;
         find_by_addr(addr, sym, &flag);
     }
     else if ((int)regs->orig_rax < 300 && (int)regs->orig_rax > -1)
