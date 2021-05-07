@@ -22,7 +22,7 @@ sym_tab_t *create_node(size_t size, unsigned long address, char *name)
     return (elem);
 }
 
-sym_tab_t *add_to_list(sym_tab_t *list, sym_tab_t *new_elem)
+sym_tab_t *add_symbol(sym_tab_t *list, sym_tab_t *new_elem)
 {
     sym_tab_t *tmp = list;
 
@@ -37,10 +37,8 @@ sym_tab_t *add_to_list(sym_tab_t *list, sym_tab_t *new_elem)
 
 Elf *init_elf(int fd, Elf **e)
 {
-    if (elf_version(EV_CURRENT) == EV_NONE) {
-        fprintf(stderr, "Error: Elf init failed.\n");
+    if (elf_version(EV_CURRENT) == EV_NONE)
         return (NULL);
-    }
     *e = elf_begin(fd, ELF_C_READ, NULL);
     if (*e == NULL) {
         fprintf(stderr, "Error: couldn't retreive elf header.\n");
@@ -63,7 +61,7 @@ sym_tab_t *get_sym_tab(Elf64_Shdr **sym_shdr, Elf_Scn **sym_scn, Elf **e)
     for (int i = 0 ; i < nb_sym ; ++i) {
         st_type = ELF64_ST_TYPE(symtab[i].st_info);
         if (st_type == STT_FUNC || st_type == STT_NOTYPE) {
-            list_sym_tab = add_to_list(list_sym_tab, \
+            list_sym_tab = add_symbol(list_sym_tab, \
 create_node(symtab[i].st_size, symtab[i].st_value, elf_strptr(*e, (*sym_shdr)->sh_link, symtab[i].st_name)));
             if (list_sym_tab == NULL)
                 return (NULL);
@@ -74,16 +72,17 @@ create_node(symtab[i].st_size, symtab[i].st_value, elf_strptr(*e, (*sym_shdr)->s
     return list_sym_tab;
 }
 
-sym_tab_t *get_sym_sec(Elf **e, Elf64_Shdr **shdr, Elf_Scn **scn)
+sym_tab_t *get_sym_sec(Elf **e)
 {
-    while ((*scn = elf_nextscn(*e, *scn)) != NULL) {
-        *shdr = elf64_getshdr(*scn);
-        if (!*shdr)
+    Elf64_Shdr *shdr = NULL;
+    Elf_Scn *scn = NULL;
+    while ((scn = elf_nextscn(*e, scn)) != NULL) {
+        shdr = elf64_getshdr(scn);
+        if (!shdr)
             return (NULL);
-        else if ((*shdr)->sh_type == SHT_SYMTAB)
-            return (get_sym_tab(shdr, scn, e));
+        else if (shdr->sh_type == SHT_SYMTAB)
+            return (get_sym_tab(&shdr, &scn, e));
     }
-    fprintf(stderr, "Error: no symtab found.\n");
     return (NULL);
 }
 
@@ -91,9 +90,9 @@ sym_tab_t *get_sym_sec(Elf **e, Elf64_Shdr **shdr, Elf_Scn **scn)
 sym_tab_t *get_symbols(char *path)
 {
     Elf *elf = NULL;
-    Elf64_Shdr *shdr = NULL;
-    Elf_Scn *sec = NULL;
-    sym_tab_t *sym = NULL;
+    //Elf64_Shdr *shdr = NULL;
+    //Elf_Scn *sec = NULL;
+    //sym_tab_t *sym = NULL;
     int fd = open(path, O_RDONLY, 0);
     if (fd < 0) {
         fprintf(stderr, "Error: open_failed.\n");
@@ -103,5 +102,5 @@ sym_tab_t *get_symbols(char *path)
         return (NULL);
     if (gelf_getclass(elf) != ELFCLASS64)
         return (NULL);
-    return get_sym_sec(&elf, &shdr, &sec);
+    return get_sym_sec(&elf);
 }

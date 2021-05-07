@@ -32,6 +32,10 @@ typedef struct flag {
 
 }flag_t;
 
+
+unsigned long get_by_name(sym_tab_t *lsm, char *name);
+void *add_to_stack_mark(flag_t *flag, sym_tab_t *entry);
+void find_by_addr(unsigned long addr, sym_tab_t *sym, flag_t *flag);
 sym_tab_t *get_symbols(char *path);
 
 #endif //FTRACE_SYMTRACK_H
