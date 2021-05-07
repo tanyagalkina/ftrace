@@ -16,7 +16,8 @@ SRCS	=	./src/main.c 		\
 		    ./src/print.c		\
 		    ./src/print_funcs.c	\
 		    ./src/print_funcs2.c	\
-		    ./src/get_sym.c
+		    ./src/get_sym.c			\
+		    ./src/symtrack.c
 
 
 OBJS	= $(SRCS:.c=.o)
