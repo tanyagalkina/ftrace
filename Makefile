@@ -19,7 +19,6 @@ SRCS	=	./src/main.c 		\
 		    ./src/get_sym.c			\
 		    ./src/symtrack.c
 
-
 OBJS	= $(SRCS:.c=.o)
 
 CFLAGS += -W -Wall -Wextra 
