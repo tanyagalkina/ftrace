@@ -8,7 +8,7 @@
 #include "../include/strace.h"
 #include <libelf.h>
 
-Elf *init_elf(int fd, Elf **e)
+Elf *init(int fd, Elf **e)
 {
     if (elf_version(EV_CURRENT) == EV_NONE) {
         perror("elf version");
@@ -75,7 +75,7 @@ sym_tab_t *get_symbols(char *path)
         fprintf(stderr, "Error: open_failed.\n");
         return (NULL);
     }
-    if (init_elf(fd, &elf) == NULL)
+    if (init(fd, &elf) == NULL)
         return (NULL);
     if (gelf_getclass(elf) != ELFCLASS64)
         return (NULL);
