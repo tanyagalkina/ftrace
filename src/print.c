@@ -62,7 +62,6 @@ void p_args(USR *regs, tools_t pr_tools)
         printf(", ");
     print_arg(table[pr_tools.call_nb].p_types[i], i, regs, pr_tools);
     printf(")");
-
 }
 
 static void print_s_retcode(char *type, USR *regs, tools_t pr_tools)
@@ -85,32 +84,14 @@ void p_retcode(USR *regs, int s_f, tools_t pr_tools)
     char *type = strdup(table[(uint)regs->orig_rax].ret);
 
     if (regs->orig_rax == 60 || regs->orig_rax == 231) {
-    //if (regs->rax == 60 || regs->rax == 231) {
         printf(" = ?\n");
         return;
     }
     if (s_f == 0 && (long long)regs->rax < 0) {
-        printf(" = 0x%llx\n", -1);
+        printf(" = 0x%llx\n", (long long)-1);
     }
     else if (s_f == 0) {
         printf(" = 0x%llx\n", regs->rax);
     } else
         print_s_retcode(type, regs, pr_tools);
 }
-
-/*void	print_return_value(struct user_regs_struct *regs,
-                           int pid, int is_s)
-{
-    struct user_regs_struct	regs2;
-    int			type = table[regs->rax].ret;
-
-    ptrace(PTRACE_GETREGS, pid, NULL, &regs2);
-    if (regs->rax == 60 || regs->rax == 231)
-        dprintf(1, "?\n");
-    else {
-
-            dprintf(1, "0x%llx\n", regs2.rax);
-        }
-}*/
-
-

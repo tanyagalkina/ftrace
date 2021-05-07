@@ -26,9 +26,11 @@ static void tail(USR u_in, int pid, int status, int s_f)
     if (u_in.rax == 231)
         printf ("Leaving function main\n");
     if (s_f)
-        printf("Syscall %s(%d) = ?\n", table[u_in.rax].name, WEXITSTATUS(status));
+        printf("Syscall %s(%d) = ?\n", \
+table[u_in.rax].name, WEXITSTATUS(status));
     else
-        printf("Syscall exit_group(0x%llx) = ?\n", WEXITSTATUS(status));
+        printf("Syscall exit_group(0x%llx) = ?\n", \
+(long long)WEXITSTATUS(status));
 
     printf("+++ exited with %d +++\n", WEXITSTATUS(status));
 }

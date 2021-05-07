@@ -19,7 +19,7 @@ unsigned long get_by_name(sym_tab_t *lsm, char *name)
     return (0);
 }
 
-void *add_to_stack_mark(flag_t *flag, sym_tab_t *entry)
+void add_to_stack_mark(flag_t *flag, sym_tab_t *entry)
 {
     if (flag->mark == NULL) {
         printf("The stack flag->mark was null\n");
@@ -49,7 +49,7 @@ void find_by_addr(unsigned long addr, sym_tab_t *sym, flag_t *flag)
     while (tmp != NULL) {
         if (addr == tmp->address && tmp->name[0] != '_') {
             printf("Entering function %s at %#lx\n",
-                   tmp->name, tmp->address);
+tmp->name, tmp->address);
             add_to_stack_mark(flag, tmp);
             assert(flag->mark != NULL);
             break;
@@ -68,4 +68,3 @@ void ret_instr(USR *regs, flag_t *flag)
             free(flag->mark->last->next);
     }
 }
-
