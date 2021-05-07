@@ -8,25 +8,25 @@
 #include "../include/strace.h"
 #include <libelf.h>
 
-Elf *init(int fd, Elf **e)
+int init_elf(int fd, Elf **e)
 {
     if (elf_version(EV_CURRENT) == EV_NONE) {
         perror("elf version");
-        return (NULL);
+        return -1;
     }
 
     *e = elf_begin(fd, ELF_C_READ, NULL);
 
     if (*e == NULL) {
         perror("elf header");
-        return (NULL);
+        return -1;
     }
 
     if (elf_kind(*e) != ELF_K_ELF) {
         perror("elf kind");
-        return (NULL);
+        return -1;
     }
-    return (*e);
+    return 0;
 }
 
 sym_tab_t *get_sym_tab(Elf64_Shdr *sym_shdr, Elf_Scn *sym_scn, Elf **e)
@@ -75,8 +75,8 @@ sym_tab_t *get_symbols(char *path)
         fprintf(stderr, "Error: open_failed.\n");
         return (NULL);
     }
-    if (init(fd, &elf) == NULL)
-        return (NULL);
+    if (init_elf(fd, &elf) == -1)
+        return NULL;
     if (gelf_getclass(elf) != ELFCLASS64)
         return (NULL);
     return get_sym_sec(&elf);
