@@ -6,45 +6,24 @@
 */
 
 #include "../include/strace.h"
-
-sym_tab_t *create_node(size_t size, unsigned long address, char *name)
-{
-    sym_tab_t *elem;
-
-    elem = malloc(sizeof(sym_tab_t));
-    if (elem == NULL)
-        return (NULL);
-    elem->address = address;
-    elem->name = name;
-    elem->size = size;
-    elem->next = NULL;
-    elem->prev = NULL;
-    return (elem);
-}
-
-sym_tab_t *add_symbol(sym_tab_t *list, sym_tab_t *new_elem)
-{
-    sym_tab_t *tmp = list;
-
-    if (list == NULL)
-        return (new_elem);
-    while (tmp->next != NULL)
-        tmp = tmp->next;
-    tmp->next = new_elem;
-    new_elem->prev = tmp;
-    return (list);
-}
+#include <libelf.h>
 
 Elf *init_elf(int fd, Elf **e)
 {
-    if (elf_version(EV_CURRENT) == EV_NONE)
+    if (elf_version(EV_CURRENT) == EV_NONE) {
+        perror("elf version");
         return (NULL);
+    }
+
     *e = elf_begin(fd, ELF_C_READ, NULL);
+
     if (*e == NULL) {
-        fprintf(stderr, "Error: couldn't retreive elf header.\n");
+        perror("elf header");
         return (NULL);
-    } else if (elf_kind(*e) != ELF_K_ELF) {
-        fprintf(stderr, "File isn't an elf file.\n");
+    }
+
+    if (elf_kind(*e) != ELF_K_ELF) {
+        perror("elf kind");
         return (NULL);
     }
     return (*e);
@@ -55,21 +34,21 @@ sym_tab_t *get_sym_tab(Elf64_Shdr *sym_shdr, Elf_Scn *sym_scn, Elf **e)
     sym_tab_t *list_sym_tab = NULL;
     Elf_Data *data = elf_getdata(sym_scn, NULL);
     Elf64_Sym *symtab = (Elf64_Sym *)data->d_buf;
-
     int entries = sym_shdr->sh_size / sym_shdr->sh_entsize;
     int st_type = 0;
 
     for (int i = 0 ; i < entries ; ++i) {
         st_type = ELF64_ST_TYPE(symtab[i].st_info);
         if (st_type == STT_FUNC || st_type == STT_NOTYPE) {
-            list_sym_tab = add_symbol(list_sym_tab, \
-create_node(symtab[i].st_size, symtab[i].st_value, elf_strptr(*e, sym_shdr->sh_link, symtab[i].st_name)));
+            sym_tab_t *node = create_node(symtab[i], sym_shdr->sh_link, *e);
+            if (node == NULL)
+                return NULL;
+            list_sym_tab = add_node(list_sym_tab, node);
             if (list_sym_tab == NULL)
                 return (NULL);
         }
     }
-    elf_end(e);
-
+    elf_end(*e);
     return list_sym_tab;
 }
 

@@ -17,12 +17,13 @@ SRCS	=	./src/main.c 		\
 		    ./src/print_funcs.c	\
 		    ./src/print_funcs2.c	\
 		    ./src/get_sym.c			\
-		    ./src/symtrack.c
+		    ./src/symtrack.c 		\
+		    ./src/create_node.c
 
 
 OBJS	= $(SRCS:.c=.o)
 
-CFLAGS += -W -Wall -Wextra 
+CFLAGS += -W -Wall -Wextra
 
 all		: $(NAME)
 

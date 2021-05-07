@@ -72,6 +72,5 @@ int main(int ac, char *av[], char **envp)
         return (84);
     if (NULL == (sym = get_symbols(args[0])))
         return (84);
-    //display_sym(sym);
     return my_ftrace(args, sym, envp);
 }
