@@ -21,20 +21,24 @@ void print_sig(siginfo_t info)
 
 static void tail(USR u_in, int pid, int status, int s_f)
 {
-   siginfo_t sig;
     ptrace(PTRACE_GETREGS, pid, NULL, &u_in);
     if (u_in.rax == 231)
         printf ("Leaving function main\n");
-    if (s_f)
-        printf("Syscall %s(%d) = ?\n", \
-table[u_in.rax].name, WEXITSTATUS(status));
-    else
-        printf("Syscall exit_group(0x%llx) = ?\n", \
-(long long)WEXITSTATUS(status));
-
+    printf("Syscall exit_group(0x%llx) = ?\n", (long long)WEXITSTATUS(status));
     printf("+++ exited with %d +++\n", WEXITSTATUS(status));
 }
 
+void print_syscall(USR *regs, tools_t pr_tools, prog_t prog )
+{
+    printf("Syscall %s", table[regs->orig_rax].name);
+    pr_tools.call_nb = (unsigned int) regs->orig_rax;
+    if (regs->orig_rax == 59) {
+        printf("(\"Syscall %s\")", prog.path);
+    } else
+        p_args(regs, pr_tools);
+    p_retcode(regs, 0, pr_tools);
+
+}
 void opcode_eval(prog_t prog, USR *regs, sym_tab_t *sym)
 {
     static flag_t flag;
@@ -50,15 +54,8 @@ void opcode_eval(prog_t prog, USR *regs, sym_tab_t *sym)
                                          (unsigned long)0xFFFFFFFF) + 5;
         find_by_addr(addr, sym, &flag);
     }
-    else if ((int)regs->orig_rax < 300 && (int)regs->orig_rax > -1) {
-        printf("Syscall %s", table[regs->orig_rax].name);
-        pr_tools.call_nb = (unsigned int) regs->orig_rax;
-        if (regs->orig_rax == 59) {
-            printf("(\"Syscall %s\")", prog.path);
-        } else
-            p_args(regs, pr_tools);
-        p_retcode(regs, 0, pr_tools);
-    }
+    else if ((int)regs->orig_rax < 300 && (int)regs->orig_rax > -1)
+        print_syscall(regs, pr_tools, prog);
     if (f == 0xc3 && flag.mark)
         ret_instr(regs, &flag);
 }

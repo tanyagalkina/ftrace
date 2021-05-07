@@ -7,6 +7,15 @@
 
 #include "../include/strace.h"
 
+/*void print_sig(siginfo_t info)
+{
+    char *sig;
+    if (sig_tab[info.si_signo].macro && info.si_signo != 0) {
+        sig = strdup(sig_tab[info.si_signo].macro);
+        printf("Received signal %s\n", sig);
+    }
+}*/
+
 sym_tab_t *add_node(sym_tab_t *list, sym_tab_t *new_elem)
 {
     sym_tab_t *tmp = list;

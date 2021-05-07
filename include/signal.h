@@ -52,4 +52,3 @@ const sign_t sig_tab[] = {
         {35, 0x23, "SIGRTMIN+1"},
         NULL
 };
-

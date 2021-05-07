@@ -62,3 +62,5 @@ void p_pointer(unsigned long long reg, tools_t pr_tools);
 int my_ftrace(char **av, sym_tab_t *sym, char **envp);
 void opcode_eval(prog_t prog, USR *regs, sym_tab_t *sym);
 int do_trace(prog_t prog, sym_tab_t *sym);
+void ret_instr(USR *regs, flag_t *flag);
+void print_sig(siginfo_t info);
