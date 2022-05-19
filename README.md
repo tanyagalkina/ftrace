@@ -9,11 +9,7 @@ Clone the project and run this command to compile the program:
 ```sh
 $> make
 ```
-Now run this one and replace `program` by the path (or simply the program's name if it can be found using $PATH environnement variable) of the program you want to trace:
+
 ```sh
 $> ./ftrace <program>
-```
-Exemple:
-```sh
-$> ./ftrace ls
 ```
